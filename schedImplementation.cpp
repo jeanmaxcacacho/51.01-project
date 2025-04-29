@@ -6,6 +6,8 @@
 using namespace std;
 
 // notes from abdiel: think about it on a case-to-case basis, tie-breaker is arrival time
+// everytime there's a context-switch/swapping, print to the terminal
+// if the swapping occurs because a process has finished, append an X to the output
 
 /*
   --INPUT--
