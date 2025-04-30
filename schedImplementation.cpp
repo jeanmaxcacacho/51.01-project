@@ -34,11 +34,22 @@ using namespace std;
   100 1 10X
 */
 
-void FCFS(int processCount);
-void SJF(int processCount);
-void SRTF(int processCount);
-void P(int processCount);
-void RR(int processCount);
+struct Process {
+  int arrivalTime;
+  int burstTime;
+  int priority;
+  int processIndex;
+};
+
+// algo logic
+void FCFS(Process* processes, int processCount);
+void SJF(Process* processes, int processCount);
+void SRTF(Process* processes, int processCount);
+void P(Process* processes, int processCount);
+void RR(Process* processes, int processCount);
+
+// IO subroutines
+Process* storeProcesses(int processCount, FILE* inputText); // return an array of all the processes
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -66,9 +77,65 @@ int main(int argc, char *argv[]) {
     sscanf(buffer, "%d %s", &processCount, schedulingAlgorithm);
     memset(buffer, 0, sizeof(buffer));
 
-    cout << "There are " << processCount << " processes in this test case." << endl;
-    cout << "The scheduling algorithm used is: " << string(schedulingAlgorithm) << endl;
+    // store processes in an array of the process structs
+    Process* processQueue = storeProcesses(processCount, inputText);
 
-    // the now I guess we can call the specific algo?
+    // the algo works on that array of process strucuts
+    if (strcmp(schedulingAlgorithm, "FCFS") == 0) {
+      FCFS(processQueue, processCount);
+    } else if (strcmp(schedulingAlgorithm, "SJF") == 0) {
+      SJF(processQueue, processCount);
+    } else if (strcmp(schedulingAlgorithm, "SRTF") == 0) {
+      SRTF(processQueue, processCount);
+    } else if (strcmp(schedulingAlgorithm, "P") == 0) {
+      P(processQueue, processCount);
+    } else {
+      RR(processQueue, processCount);
+    }
+
+    delete[] processQueue;
   }
+  fclose(inputText);
+  return 0;
+}
+
+// the test cases use one based indexing kekW
+// first process index is 1 and the last is X
+
+void FCFS(Process* processes, int processCount) {
+  for (int i=0; i < processCount; i++) {
+    cout << "Process " << processes[i].processIndex << endl;
+    cout << "Arrival Time: " << processes[i].arrivalTime << endl;
+    cout << "Burst Time: " << processes[i].burstTime << endl;
+    cout << "Priority: " << processes[i].priority << endl;
+  }
+}
+
+void SJF(Process* processes, int processCount) {
+  cout << "hi" << endl;
+}
+
+void SRTF(Process* processes, int processCount) {
+  cout << "hi" << endl;
+}
+
+void P(Process* processes, int processCount) {
+  cout << "hi" << endl;
+}
+
+void RR(Process* processes, int processCount) {
+  cout << "hi" << endl;
+}
+
+// this returns an array of Process structs
+Process* storeProcesses(int processCount, FILE* inputText) {
+  Process* processQueue = new Process[processCount];
+  for (int i=0; i < processCount; i++) {
+    char buffer[20];
+    fgets(buffer, sizeof(buffer), inputText);
+    sscanf(buffer, "%d %d %d", &processQueue[i].arrivalTime, &processQueue[i].burstTime, &processQueue[i].priority);
+    memset(buffer, 0, sizeof(buffer));
+    processQueue[i].processIndex = i+1;
+  }
+  return processQueue;
 }
