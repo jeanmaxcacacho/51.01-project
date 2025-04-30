@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -48,6 +49,9 @@ void SRTF(Process* processes, int processCount);
 void P(Process* processes, int processCount);
 void RR(Process* processes, int processCount);
 
+// process logic subroutines
+Process* sortProcessesArrivalTime(Process* processArr, int processArrSize);
+
 // IO subroutines
 Process* storeProcesses(int processCount, FILE* inputText); // return an array of all the processes
 
@@ -66,34 +70,31 @@ int main(int argc, char *argv[]) {
   int testCases = atoi(buffer);
   memset(buffer, 0, sizeof(buffer));
 
-  cout << "There are " << testCases << " test cases all in all in this text file." << endl;
-
-  for (int caseCount = 1; caseCount <= testCases; caseCount++) {
+  for (int caseCount = 1; caseCount < testCases+1; caseCount++) {
     // the next thing we get from the file is the amount of processes in the test case
     // and the scheduling algorithm to be used
-    int processCount;
+    cout << caseCount << endl;
+    int processCount; // be mindful that this is also the size of processQueue array
     char schedulingAlgorithm[10];
     fgets(buffer, sizeof(buffer), inputText);
     sscanf(buffer, "%d %s", &processCount, schedulingAlgorithm);
     memset(buffer, 0, sizeof(buffer));
 
-    // store processes in an array of the process structs
-    Process* processQueue = storeProcesses(processCount, inputText);
+    Process* processQueue = storeProcesses(processCount, inputText); // store processes in an array of the process structs
+    Process* sortedProcesses = sortProcessesArrivalTime(processQueue, processCount); // sort processQueue
 
     // the algo works on that array of process strucuts
     if (strcmp(schedulingAlgorithm, "FCFS") == 0) {
-      FCFS(processQueue, processCount);
+      FCFS(sortedProcesses, processCount);
     } else if (strcmp(schedulingAlgorithm, "SJF") == 0) {
-      SJF(processQueue, processCount);
+      SJF(sortedProcesses, processCount);
     } else if (strcmp(schedulingAlgorithm, "SRTF") == 0) {
-      SRTF(processQueue, processCount);
+      SRTF(sortedProcesses, processCount);
     } else if (strcmp(schedulingAlgorithm, "P") == 0) {
-      P(processQueue, processCount);
+      P(sortedProcesses, processCount);
     } else {
-      RR(processQueue, processCount);
+      RR(sortedProcesses, processCount);
     }
-
-    delete[] processQueue;
   }
   fclose(inputText);
   return 0;
@@ -102,11 +103,32 @@ int main(int argc, char *argv[]) {
 // the test cases use one based indexing kekW
 // first process index is 1 and the last is X
 
+// output format
+// test case number
+// running process 1
+// running process 2
+// ...
+// end process X
+// test case number + 1
+
+// sample for FCFS (without the case number)
+// INPUT
+// 2 FCFS
+// 100 10 1 (arrival time, burst, priority)
+// 10 70 1
+// OUTPUT
+// 10 2 70X (time elapsed so far, process index, CPU time used/burst time)
+// 100 1 10X
+
+// these functions are passed in SORTED ARRAYS of process structs
+// maybe we can do a rotating queue, process that finish are popped
+// our executino condition is while the queue still has shit inside
+
 void FCFS(Process* processes, int processCount) {
-  for (int i=0; i < processCount; i++) {
-    cout << "Process " << processes[i].processIndex << endl;
-    cout << "Arrival Time: " << processes[i].arrivalTime << endl;
-    cout << "Burst Time: " << processes[i].burstTime << endl;
+  for (int i = 0; i < processCount; i++) {
+    cout << "Process " << processes[i].processIndex << " || ";
+    cout << "Arrival Time: " << processes[i].arrivalTime << " ";
+    cout << "Burst Time: " << processes[i].burstTime << " ";
     cout << "Priority: " << processes[i].priority << endl;
   }
 }
@@ -125,6 +147,15 @@ void P(Process* processes, int processCount) {
 
 void RR(Process* processes, int processCount) {
   cout << "hi" << endl;
+}
+
+
+// returns a sroted array of Process structs by INCREASING arrival time
+Process* sortProcessesArrivalTime(Process* processArr, int processArrSize) {
+  sort(processArr, processArr + processArrSize, [](const Process &a, Process &b) {
+    return a.arrivalTime < b.arrivalTime;
+  });
+  return processArr;
 }
 
 // this returns an array of Process structs
