@@ -128,9 +128,12 @@ void FCFS(vector<Process> &processes, int processCount) {
     // only write to terminal when there is a context switch
     // in the case of FCFS context switches only happen when
     // the current process finishes execution
-    if (currentTime < currentProcess.arrivalTime) currentTime = currentProcess.arrivalTime;
+    if (currentTime < currentProcess.arrivalTime) {
+      currentTime = currentProcess.arrivalTime;
+      cout << currentProcess.arrivalTime;
+    }
     if (burstsLeft == 0) {
-      cout << currentTime << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
+      cout << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
       processes.erase(processes.begin());
       currentProcess = processes.front();
       burstsLeft = currentProcess.burstTime;
