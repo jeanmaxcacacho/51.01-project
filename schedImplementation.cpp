@@ -107,6 +107,10 @@ int main(int argc, char *argv[]) {
 // end process X
 // test case number + 1
 
+// these functions are passed in SORTED VECTORS of process structs
+// maybe we can do a rotating queue, process that finish are popped
+// our execution condition is while the queue still has shit inside
+
 // sample for FCFS (without the case number)
 // INPUT
 // 2 FCFS
@@ -115,17 +119,24 @@ int main(int argc, char *argv[]) {
 // OUTPUT
 // 10 2 70X (time elapsed so far, process index, CPU time used/burst time)
 // 100 1 10X
-
-// these functions are passed in SORTED VECTORS of process structs
-// maybe we can do a rotating queue, process that finish are popped
-// our execution condition is while the queue still has shit inside
-
 void FCFS(vector<Process> &processes, int processCount) {
-  for (int i = 0; i < processCount; i++) {
-    cout << "Process " << processes[i].processIndex << " || ";
-    cout << "Arrival Time: " << processes[i].arrivalTime << " ";
-    cout << "Burst Time: " << processes[i].burstTime << " ";
-    cout << "Priority: " << processes[i].priority << endl;
+  Process currentProcess = processes.front();
+  int burstsLeft = currentProcess.burstTime;
+  int currentTime = 0;
+
+  while (!processes.empty()) {
+    // only write to terminal when there is a context switch
+    // in the case of FCFS context switches only happen when
+    // the current process finishes execution
+    if (currentTime < currentProcess.arrivalTime) currentTime = currentProcess.arrivalTime;
+    if (burstsLeft == 0) {
+      cout << currentTime-currentProcess << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
+      processes.erase(processes.begin());
+      currentProcess = processes.front();
+      burstsLeft = currentProcess.burstTime;
+    }
+    currentTime++;
+    burstsLeft--;
   }
 }
 
