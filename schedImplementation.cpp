@@ -3,6 +3,7 @@
 #include <cstring>
 #include <string>
 #include <algorithm>
+#include <vector>
 
 using namespace std;
 
@@ -43,17 +44,14 @@ struct Process {
 };
 
 // algo logic
-void FCFS(Process* processes, int processCount);
-void SJF(Process* processes, int processCount);
-void SRTF(Process* processes, int processCount);
-void P(Process* processes, int processCount);
-void RR(Process* processes, int processCount);
+void FCFS(vector<Process> &processes, int processCount);
+void SJF(vector<Process> &processes, int processCount);
+void SRTF(vector<Process> &processes, int processCount);
+void P(vector<Process> &processes, int processCount);
+void RR(vector<Process> &processes, int processCount);
 
-// process logic subroutines
-Process* sortProcessesArrivalTime(Process* processArr, int processArrSize);
-
-// IO subroutines
-Process* storeProcesses(int processCount, FILE* inputText); // return an array of all the processes
+// subroutines
+vector<Process> storeProcesses(int processCount, FILE* inputText); // return a sorted vector of all the processes
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -79,9 +77,7 @@ int main(int argc, char *argv[]) {
     fgets(buffer, sizeof(buffer), inputText);
     sscanf(buffer, "%d %s", &processCount, schedulingAlgorithm);
     memset(buffer, 0, sizeof(buffer));
-
-    Process* processQueue = storeProcesses(processCount, inputText); // store processes in an array of the process structs
-    Process* sortedProcesses = sortProcessesArrivalTime(processQueue, processCount); // sort processQueue
+    vector<Process> sortedProcesses = storeProcesses(processCount, inputText);
 
     // the algo works on that array of process strucuts
     if (strcmp(schedulingAlgorithm, "FCFS") == 0) {
@@ -120,11 +116,11 @@ int main(int argc, char *argv[]) {
 // 10 2 70X (time elapsed so far, process index, CPU time used/burst time)
 // 100 1 10X
 
-// these functions are passed in SORTED ARRAYS of process structs
+// these functions are passed in SORTED VECTORS of process structs
 // maybe we can do a rotating queue, process that finish are popped
-// our executino condition is while the queue still has shit inside
+// our execution condition is while the queue still has shit inside
 
-void FCFS(Process* processes, int processCount) {
+void FCFS(vector<Process> &processes, int processCount) {
   for (int i = 0; i < processCount; i++) {
     cout << "Process " << processes[i].processIndex << " || ";
     cout << "Arrival Time: " << processes[i].arrivalTime << " ";
@@ -133,40 +129,36 @@ void FCFS(Process* processes, int processCount) {
   }
 }
 
-void SJF(Process* processes, int processCount) {
+void SJF(vector<Process> &processes, int processCount) {
   cout << "hi" << endl;
 }
 
-void SRTF(Process* processes, int processCount) {
+void SRTF(vector<Process> &processes, int processCount) {
   cout << "hi" << endl;
 }
 
-void P(Process* processes, int processCount) {
+void P(vector<Process> &processes, int processCount) {
   cout << "hi" << endl;
 }
 
-void RR(Process* processes, int processCount) {
+void RR(vector<Process> &processes, int processCount) {
   cout << "hi" << endl;
 }
 
-
-// returns a sroted array of Process structs by INCREASING arrival time
-Process* sortProcessesArrivalTime(Process* processArr, int processArrSize) {
-  sort(processArr, processArr + processArrSize, [](const Process &a, Process &b) {
-    return a.arrivalTime < b.arrivalTime;
-  });
-  return processArr;
-}
-
-// this returns an array of Process structs
-Process* storeProcesses(int processCount, FILE* inputText) {
-  Process* processQueue = new Process[processCount];
+// returns a sorted vector of the processes in block
+vector<Process> storeProcesses(int processCount, FILE* inputText) {
+  vector<Process> processes;
   for (int i=0; i < processCount; i++) {
     char buffer[20];
+    Process temp;
     fgets(buffer, sizeof(buffer), inputText);
-    sscanf(buffer, "%d %d %d", &processQueue[i].arrivalTime, &processQueue[i].burstTime, &processQueue[i].priority);
+    sscanf(buffer, "%d %d %d", &temp.arrivalTime, &temp.burstTime, &temp.priority);
     memset(buffer, 0, sizeof(buffer));
-    processQueue[i].processIndex = i+1;
+    temp.processIndex = i+1;
+    processes.push_back(temp);
   }
-  return processQueue;
+  sort(processes.begin(), processes.end(), [](const Process& a, const Process& b) {
+    return a.arrivalTime < b.arrivalTime;
+  });
+  return processes;
 }
