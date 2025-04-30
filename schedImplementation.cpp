@@ -130,7 +130,7 @@ void FCFS(vector<Process> &processes, int processCount) {
     // the current process finishes execution
     if (currentTime < currentProcess.arrivalTime) currentTime = currentProcess.arrivalTime;
     if (burstsLeft == 0) {
-      cout << currentTime-currentProcess << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
+      cout << currentTime << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
       processes.erase(processes.begin());
       currentProcess = processes.front();
       burstsLeft = currentProcess.burstTime;
