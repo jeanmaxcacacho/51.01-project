@@ -36,6 +36,7 @@ using namespace std;
   100 1 10X
 */
 
+// TODO: added struct member attribute for block report (e.g. first response, termination)
 struct Process {
   int arrivalTime;
   int burstTime;
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]) {
     // the next thing we get from the file is the amount of processes in the test case
     // and the scheduling algorithm to be used
     cout << caseCount << endl;
-    int processCount; // be mindful that this is also the size of processQueue array
+    int processCount; // be mindful that this is also the size of the processes vector
     char schedulingAlgorithm[10];
     fgets(buffer, sizeof(buffer), inputText);
     sscanf(buffer, "%d %s", &processCount, schedulingAlgorithm);
@@ -144,7 +145,49 @@ void FCFS(vector<Process> &processes, int processCount) {
 }
 
 void SJF(vector<Process> &processes, int processCount) {
-  cout << "hi" << endl;
+  vector<Process> readyQueue;
+  int currentTime = 0;
+  bool cpuIdle = true;
+  Process currentProcess;
+  int burstsLeft = 0;
+
+  while (!processes.empty() || !readyQueue.empty() || !cpuIdle) {
+    // Check for new arrivals
+    int i = 0;
+    while (i < processes.size()) {
+      if (processes[i].arrivalTime <= currentTime) {
+        readyQueue.push_back(processes[i]);
+        processes.erase(processes.begin() + i);
+      } else {
+        ++i;
+      }
+    }
+
+    // If CPU is idle and there are ready processes, schedule one
+    if (cpuIdle && !readyQueue.empty()) {
+      // Sort by burst time (and then by arrival time as tie-breaker)
+      sort(readyQueue.begin(), readyQueue.end(), [](const Process &a, const Process &b) {
+        if (a.burstTime == b.burstTime)
+          return a.arrivalTime < b.arrivalTime;
+        return a.burstTime < b.burstTime;
+      });
+
+      currentProcess = readyQueue.front();
+      readyQueue.erase(readyQueue.begin());
+
+      // Start executing
+      cpuIdle = false;
+      burstsLeft = currentProcess.burstTime;
+      cout << currentTime << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
+
+      currentTime += burstsLeft; // Fast forward time since non-preemptive
+      burstsLeft = 0;
+      cpuIdle = true;
+    } else if (cpuIdle && readyQueue.empty() && !processes.empty()) {
+      // No one is ready, skip forward in time
+      currentTime = processes.front().arrivalTime;
+    }
+  }
 }
 
 void SRTF(vector<Process> &processes, int processCount) {
