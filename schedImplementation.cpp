@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <unordered_map>
 
 using namespace std;
 
@@ -42,6 +43,13 @@ struct Process {
   int burstTime;
   int priority;
   int processIndex;
+
+  // for reporting
+  int firstResponse;
+  int terminationTime;
+
+  // for the preemptive scheduling algos
+  int burstsLeft;
 };
 
 // algo logic
@@ -53,6 +61,7 @@ void RR(vector<Process> &processes, int processCount);
 
 // subroutines
 vector<Process> storeProcesses(int processCount, FILE* inputText); // return a sorted vector of all the processes
+void setBurstsLeft(vector<Process> &processVector); // lmfao kek
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -191,7 +200,83 @@ void SJF(vector<Process> &processes, int processCount) {
 }
 
 void SRTF(vector<Process> &processes, int processCount) {
-  cout << "hi" << endl;
+  setBurstsLeft(processes);  // initialize burstsLeft
+
+  vector<Process> readyQueue;
+  int currentTime = 0;
+  int prevProcessIndex = -1; // for detecting context switches
+  Process currentProcess;
+  bool isRunning = false;
+  int burstStartTime = 0;
+
+  while (!readyQueue.empty() || !processes.empty() || isRunning) {
+    // Add new arrivals
+    int i = 0;
+    while (i < processes.size()) {
+      if (processes[i].arrivalTime <= currentTime) {
+        readyQueue.push_back(processes[i]);
+        processes.erase(processes.begin() + i);
+      } else {
+        ++i;
+      }
+    }
+
+    // Choose process with shortest remaining time
+    if (!readyQueue.empty()) {
+      sort(readyQueue.begin(), readyQueue.end(), [](const Process &a, const Process &b) {
+        if (a.burstsLeft == b.burstsLeft)
+          return a.arrivalTime < b.arrivalTime;
+        return a.burstsLeft < b.burstsLeft;
+      });
+
+      Process nextProcess = readyQueue.front();
+
+      // Context switch
+      if (!isRunning || nextProcess.processIndex != currentProcess.processIndex) {
+        if (isRunning) {
+          int timeUsed = currentTime - burstStartTime;
+          cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed;
+          if (currentProcess.burstsLeft == 0)
+            cout << "X";
+          cout << "\n";
+        }
+
+        burstStartTime = currentTime;
+        currentProcess = nextProcess;
+        isRunning = true;
+      }
+
+      // Run the selected process for 1 time unit
+      currentProcess.burstsLeft--;
+      currentTime++;
+
+      // Update the process in the ready queue
+      for (auto &p : readyQueue) {
+        if (p.processIndex == currentProcess.processIndex) {
+          p.burstsLeft = currentProcess.burstsLeft;
+          break;
+        }
+      }
+
+      // If process finished, remove from queue and print
+      if (currentProcess.burstsLeft == 0) {
+        // Remove from readyQueue
+        readyQueue.erase(remove_if(readyQueue.begin(), readyQueue.end(),
+                                   [&](const Process &p) { return p.processIndex == currentProcess.processIndex; }),
+                         readyQueue.end());
+        isRunning = false;
+        // The output is handled at the next context switch or at end
+      }
+
+    } else {
+      // CPU is idle
+      currentTime++;
+    }
+  }
+
+  // Final process output (if the last one finished without a context switch)
+  int timeUsed = currentTime - burstStartTime;
+  cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed << "X\n";
 }
 
 void P(vector<Process> &processes, int processCount) {
@@ -218,4 +303,10 @@ vector<Process> storeProcesses(int processCount, FILE* inputText) {
     return a.arrivalTime < b.arrivalTime;
   });
   return processes;
+}
+
+void setBurstsLeft(vector<Process> &processVector) {
+  for (int i=0; i < processVector.size(); i++) {
+    processVector[i].burstsLeft = processVector[i].burstTime;
+  }
 }
