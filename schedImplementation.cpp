@@ -57,7 +57,7 @@ void FCFS(vector<Process> &processes, int processCount);
 void SJF(vector<Process> &processes, int processCount);
 void SRTF(vector<Process> &processes, int processCount);
 void P(vector<Process> &processes, int processCount);
-void RR(vector<Process> &processes, int processCount);
+void RR(vector<Process> &processes, int processCount, int rrTimeSlice);
 
 // subroutines
 vector<Process> storeProcesses(int processCount, FILE* inputText); // return a sorted vector of all the processes
@@ -83,9 +83,10 @@ int main(int argc, char *argv[]) {
     // and the scheduling algorithm to be used
     cout << caseCount << endl;
     int processCount; // be mindful that this is also the size of the processes vector
+    int rrTimeSlice;
     char schedulingAlgorithm[10];
     fgets(buffer, sizeof(buffer), inputText);
-    sscanf(buffer, "%d %s", &processCount, schedulingAlgorithm);
+    sscanf(buffer, "%d %s %d", &processCount, schedulingAlgorithm, &rrTimeSlice); // so apparently this works?
     memset(buffer, 0, sizeof(buffer));
     vector<Process> sortedProcesses = storeProcesses(processCount, inputText);
 
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(schedulingAlgorithm, "P") == 0) {
       P(sortedProcesses, processCount);
     } else {
-      RR(sortedProcesses, processCount);
+      RR(sortedProcesses, processCount, rrTimeSlice);
     }
   }
   fclose(inputText);
@@ -352,7 +353,7 @@ void P(vector<Process> &processes, int processCount) {
 }
 
 
-void RR(vector<Process> &processes, int processCount) {
+void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
   cout << "hi" << endl;
 }
 
