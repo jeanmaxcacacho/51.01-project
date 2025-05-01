@@ -297,7 +297,7 @@ void P(vector<Process> &processes, int processCount) {
     }
 
     if (!readyQueue.empty()) {
-      // Sort readyQueue by descending priority, arrival time, then process index
+      // Sort by descending priority, arrival time, then process index
       sort(readyQueue.begin(), readyQueue.end(), [](const Process &a, const Process &b) {
         if (a.priority == b.priority) {
           if (a.arrivalTime == b.arrivalTime)
@@ -311,13 +311,12 @@ void P(vector<Process> &processes, int processCount) {
 
       // Context switch if new process is different
       if (!isRunning || nextProcess.processIndex != currentProcess.processIndex) {
-        if (isRunning) {
+        // Only print switch-out if process wasn't just finished
+        if (isRunning && currentProcess.burstsLeft > 0) {
           int timeUsed = currentTime - burstStartTime;
-          cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed;
-          if (currentProcess.burstsLeft == 0)
-            cout << "X";
-          cout << "\n";
+          cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed << "\n";
         }
+
         burstStartTime = currentTime;
         currentProcess = nextProcess;
         isRunning = true;
@@ -327,7 +326,7 @@ void P(vector<Process> &processes, int processCount) {
       currentProcess.burstsLeft--;
       currentTime++;
 
-      // Update the process in the ready queue
+      // Update current process in ready queue
       for (auto &p : readyQueue) {
         if (p.processIndex == currentProcess.processIndex) {
           p.burstsLeft = currentProcess.burstsLeft;
@@ -335,7 +334,7 @@ void P(vector<Process> &processes, int processCount) {
         }
       }
 
-      // If current process finished, remove from readyQueue and print immediately
+      // If process finishes now, print and remove it
       if (currentProcess.burstsLeft == 0) {
         int timeUsed = currentTime - burstStartTime;
         cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed << "X\n";
@@ -346,11 +345,12 @@ void P(vector<Process> &processes, int processCount) {
       }
 
     } else {
-      // CPU idle
+      // CPU is idle
       currentTime++;
     }
   }
 }
+
 
 void RR(vector<Process> &processes, int processCount) {
   cout << "hi" << endl;
