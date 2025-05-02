@@ -63,7 +63,7 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice);
 // subroutines
 vector<Process> storeProcesses(int processCount, FILE* inputText); // return a sorted vector of all the processes
 void setBurstsLeft(vector<Process> &processVector); // lmfao kek
-void reportPerformance(vector<Process> &processVector, int processCount, int cpuActiveTime);
+void reportPerformance(vector<Process> &processVector, int processCount, int cpuActiveTime, int totalExecTime);
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -354,14 +354,76 @@ void P(vector<Process> &processes, int processCount) {
   }
 }
 
+// void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
+//   setBurstsLeft(processes);
+//   deque<Process> readyQueue;
+//   int currentTime = 0;
+//   int burstStartTime = 0;
+
+//   while (!readyQueue.empty() || !processes.empty()) {
+//     // add all newly arrived processes to the queue
+//     int i = 0;
+//     while (i < processes.size()) {
+//       if (processes[i].arrivalTime <= currentTime) {
+//         readyQueue.push_back(processes[i]);
+//         processes.erase(processes.begin() + i);
+//       } else {
+//         ++i;
+//       }
+//     }
+
+//     if (!readyQueue.empty()) {
+//       Process currentProcess = readyQueue.front();
+//       readyQueue.pop_front();
+
+//       burstStartTime = currentTime;
+
+//       int timeToRun = min(rrTimeSlice, currentProcess.burstsLeft);
+//       currentTime += timeToRun;
+//       currentProcess.burstsLeft -= timeToRun;
+
+//       cout << burstStartTime << " " << currentProcess.processIndex << " " << timeToRun;
+//       if (currentProcess.burstsLeft == 0)
+//         cout << "X";
+//       cout << "\n";
+
+//       // newly arrived processes that came in during this time slice
+//       i = 0;
+//       while (i < processes.size()) {
+//         if (processes[i].arrivalTime <= currentTime) {
+//           readyQueue.push_front(processes[i]);
+//           processes.erase(processes.begin() + i);
+//         } else {
+//           ++i;
+//         }
+//       }
+
+//       // process still has remaining time, requeue it
+//       if (currentProcess.burstsLeft > 0) {
+//         readyQueue.push_back(currentProcess);
+//       }
+
+//     } else {
+//       currentTime++; // nothing is in the queue but processes haven't arrived yet, advance time
+//     }
+//   }
+// }
+
 void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
   setBurstsLeft(processes);
   deque<Process> readyQueue;
+  vector<Process> completeProcesses;
   int currentTime = 0;
   int burstStartTime = 0;
+  int cpuActiveTime = 0;  // Track total active time of the CPU
+
+  // Initialize firstResponse for all processes
+  for (auto &p : processes) {
+    p.firstResponse = -1;  // No response yet
+  }
 
   while (!readyQueue.empty() || !processes.empty()) {
-    // add all newly arrived processes to the queue
+    // Add all newly arrived processes to the queue
     int i = 0;
     while (i < processes.size()) {
       if (processes[i].arrivalTime <= currentTime) {
@@ -376,18 +438,28 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
       Process currentProcess = readyQueue.front();
       readyQueue.pop_front();
 
-      burstStartTime = currentTime;
+      // Set first response time if not already set
+      if (currentProcess.firstResponse == -1) {
+        currentProcess.firstResponse = currentTime;
+      }
 
+      burstStartTime = currentTime;
       int timeToRun = min(rrTimeSlice, currentProcess.burstsLeft);
       currentTime += timeToRun;
       currentProcess.burstsLeft -= timeToRun;
 
+      cpuActiveTime += timeToRun;  // Increment the CPU active time
+
       cout << burstStartTime << " " << currentProcess.processIndex << " " << timeToRun;
-      if (currentProcess.burstsLeft == 0)
-        cout << "X";
+      if (currentProcess.burstsLeft == 0) {
+        cout << "X";  // Process finished
+        // Set termination time when the process finishes
+        currentProcess.terminationTime = currentTime;
+        completeProcesses.push_back(currentProcess);  // Store completed process
+      }
       cout << "\n";
 
-      // newly arrived processes that came in during this time slice
+      // Newly arrived processes that came in during this time slice
       i = 0;
       while (i < processes.size()) {
         if (processes[i].arrivalTime <= currentTime) {
@@ -398,16 +470,26 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
         }
       }
 
-      // process still has remaining time, requeue it
+      // If process still has remaining time, requeue it
       if (currentProcess.burstsLeft > 0) {
         readyQueue.push_back(currentProcess);
       }
 
     } else {
-      currentTime++; // nothing is in the queue but processes haven't arrived yet, advance time
+      currentTime++;  // Nothing is in the queue but processes haven't arrived yet, advance time
     }
   }
+
+  // Sort completed processes by process index
+  sort(completeProcesses.begin(), completeProcesses.end(),
+       [](const Process &a, const Process &b) {
+           return a.processIndex < b.processIndex;
+       });
+
+  // You can now pass cpuActiveTime and currentTime (as totalExecTime) to reportPerformance
+  reportPerformance(completeProcesses, processCount, cpuActiveTime, currentTime);
 }
+
 
 
 // returns a sorted vector of the processes in block
