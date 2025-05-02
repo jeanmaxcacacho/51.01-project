@@ -1,0 +1,53 @@
+void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
+    setBurstsLeft(processes);
+    vector<Process*> readyQueue;
+    Process* currentProcess;
+
+    int currentTime = 0;
+
+    while (!readyQueue.empty() || !processes.empty()) {
+      int i = 0;
+      while (i < processes.size()) {
+        if (processes[i].arrivalTime <= currentTime) {
+          readyQueue.push_back(&processes[i]);
+          processes.erase(processes.begin() + i);
+        } else {
+          i++;
+        }
+      }
+
+      if (readyQueue.empty()) {
+        currentTime = processes.front().arrivalTime;
+        readyQueue.push_back(&processes.front());
+      }
+
+      currentProcess = readyQueue.front();
+      readyQueue.erase(readyQueue.begin()); // remove process from ready queue when running
+
+      int burstStartTime = currentTime;
+      int timeUsed = 0;
+
+      for (int t = 0; t < rrTimeSlice; t++) {
+        currentProcess->burstsLeft--;
+        timeUsed++;
+        if (currentProcess->burstsLeft == 0) break;
+      }
+
+      if (currentProcess->burstsLeft != 0) {
+        cout << burstStartTime << " " << currentProcess->processIndex << " " << timeUsed << endl;
+        sort(readyQueue.begin(), readyQueue.end(), [] (const Process* a, Process* b) {
+          return a->arrivalTime < b->arrivalTime;
+        });
+        readyQueue.push_back(currentProcess); // preempted goes to the back
+        currentProcess = readyQueue.front(); // FCFS, push it back to readyQueue
+      } else {
+        cout << burstStartTime << " "  << currentProcess->processIndex << " " << timeUsed << "X\n";
+        sort(readyQueue.begin(), readyQueue.end(), [] (const Process* a, Process* b) {
+          return a->arrivalTime < b->arrivalTime;
+        });
+        currentProcess = readyQueue.front(); // no push back
+      }
+
+      currentTime+=timeUsed;
+    }
+}

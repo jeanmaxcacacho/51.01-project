@@ -4,7 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
-#include <queue>
+#include <deque>
 #include <unordered_map>
 
 using namespace std;
@@ -355,7 +355,7 @@ void P(vector<Process> &processes, int processCount) {
 
 void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
   setBurstsLeft(processes);  // initialize burstsLeft
-  queue<Process> readyQueue;
+  deque<Process> readyQueue;
   int currentTime = 0;
   int burstStartTime = 0;
 
@@ -364,7 +364,7 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
     int i = 0;
     while (i < processes.size()) {
       if (processes[i].arrivalTime <= currentTime) {
-        readyQueue.push(processes[i]);
+        readyQueue.push_back(processes[i]);
         processes.erase(processes.begin() + i);
       } else {
         ++i;
@@ -373,7 +373,7 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
 
     if (!readyQueue.empty()) {
       Process currentProcess = readyQueue.front();
-      readyQueue.pop();
+      readyQueue.pop_front();
 
       burstStartTime = currentTime;
 
@@ -391,7 +391,7 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
       i = 0;
       while (i < processes.size()) {
         if (processes[i].arrivalTime <= currentTime) {
-          readyQueue.push(processes[i]);
+          readyQueue.push_front(processes[i]);
           processes.erase(processes.begin() + i);
         } else {
           ++i;
@@ -400,8 +400,8 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
 
       // If process still has remaining time, requeue it
       if (currentProcess.burstsLeft > 0) {
-        currentProcess.arrivalTime = currentTime;  // update for fairness
-        readyQueue.push(currentProcess);
+        // currentProcess.arrivalTime = currentTime;  // update for fairness
+        readyQueue.push_back(currentProcess);
       }
 
     } else {
