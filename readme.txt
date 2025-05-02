@@ -32,5 +32,5 @@ are already sorted by arrival time when they are passed into the algorithm.
 
 For all algorithms except FCFS, an intermediate "readyQueue" vector is instantiated
 to handle process dispatching. This vector grows in importance with the preemptive
-algorithms. At the end of each algorithm function we call the reportPerformance subroutine
-to display all the desired metrics.
+algorithms, it's used to store processes that are preempted out.At the end of each
+algorithm function we call the reportPerformance subroutine to display all the desired metrics.
