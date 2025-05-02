@@ -355,15 +355,9 @@ void P(vector<Process> &processes, int processCount) {
 
 void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
   setBurstsLeft(processes);  // initialize burstsLeft
-
   queue<Process> readyQueue;
   int currentTime = 0;
   int burstStartTime = 0;
-
-  // Sort by arrival time for initial loading
-  sort(processes.begin(), processes.end(), [](const Process &a, const Process &b) {
-    return a.arrivalTime < b.arrivalTime;
-  });
 
   while (!readyQueue.empty() || !processes.empty()) {
     // Add all newly arrived processes to the queue
