@@ -354,13 +354,13 @@ void P(vector<Process> &processes, int processCount) {
 }
 
 void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
-  setBurstsLeft(processes);  // initialize burstsLeft
+  setBurstsLeft(processes);
   deque<Process> readyQueue;
   int currentTime = 0;
   int burstStartTime = 0;
 
   while (!readyQueue.empty() || !processes.empty()) {
-    // Add all newly arrived processes to the queue
+    // add all newly arrived processes to the queue
     int i = 0;
     while (i < processes.size()) {
       if (processes[i].arrivalTime <= currentTime) {
@@ -381,13 +381,12 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
       currentTime += timeToRun;
       currentProcess.burstsLeft -= timeToRun;
 
-      // Print output
       cout << burstStartTime << " " << currentProcess.processIndex << " " << timeToRun;
       if (currentProcess.burstsLeft == 0)
         cout << "X";
       cout << "\n";
 
-      // Add newly arrived processes that came in during this time slice
+      // newly arrived processes that came in during this time slice
       i = 0;
       while (i < processes.size()) {
         if (processes[i].arrivalTime <= currentTime) {
@@ -398,15 +397,13 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
         }
       }
 
-      // If process still has remaining time, requeue it
+      // process still has remaining time, requeue it
       if (currentProcess.burstsLeft > 0) {
-        // currentProcess.arrivalTime = currentTime;  // update for fairness
         readyQueue.push_back(currentProcess);
       }
 
     } else {
-      // If nothing is in the queue but processes haven't arrived yet, advance time
-      currentTime++;
+      currentTime++; // nothing is in the queue but processes haven't arrived yet, advance time
     }
   }
 }
