@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 #include <deque>
-#include <unordered_map>
+#include <iomanip>
 
 using namespace std;
 
@@ -63,6 +63,7 @@ void RR(vector<Process> &processes, int processCount, int rrTimeSlice);
 // subroutines
 vector<Process> storeProcesses(int processCount, FILE* inputText); // return a sorted vector of all the processes
 void setBurstsLeft(vector<Process> &processVector); // lmfao kek
+void reportPerformance(vector<Process> &processVector, int processCount, int cpuActiveTime);
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -431,4 +432,57 @@ void setBurstsLeft(vector<Process> &processVector) {
   for (int i=0; i < processVector.size(); i++) {
     processVector[i].burstsLeft = processVector[i].burstTime;
   }
+}
+
+void reportPerformance(vector<Process> &processVector, int processCount, int cpuActiveTime, int totalExecTime) {
+  cout << fixed << setprecision(2);
+
+  float cpuUtil = (static_cast<float>(cpuActiveTime) / totalExecTime) * 100;
+  float throughput = static_cast<float>(processCount) / cpuActiveTime;
+
+  vector<int> processTurnaroundTimes;
+  int totalTurnaroundTime = 0;
+  for (int i = 0; i < processVector.size(); i++) {
+    int tat = processVector[i].terminationTime - processVector[i].arrivalTime;
+    processTurnaroundTimes.push_back(tat);
+    totalTurnaroundTime += tat;
+  }
+  float avgTurnaroundTime = static_cast<float>(totalTurnaroundTime) / processCount;
+
+  vector<int> processWaitingTimes;
+  int totalWaitingTime = 0;
+  for (int i = 0; i < processTurnaroundTimes.size(); i++) {
+    int wt = processTurnaroundTimes[i] - processVector[i].burstTime;
+    processWaitingTimes.push_back(wt);
+    totalWaitingTime += wt;
+  }
+  float avgProcessWaitingTime = static_cast<float>(totalWaitingTime) / processCount;
+
+  vector<int> processResponseTimes;
+  int totalResponseTime = 0;
+  for (int i = 0; i < processVector.size(); i++) {
+    int rt = processVector[i].firstResponse - processVector[i].arrivalTime;
+    processResponseTimes.push_back(rt);
+    totalResponseTime += rt;
+  }
+  float avgResponseTime = static_cast<float>(totalResponseTime) / processCount;
+
+  cout << "CPU Utilization: " << cpuUtil << "%" << endl;
+  cout << "Throughput: " << throughput << " processes/ns" << endl;
+
+  cout << "Average waiting time: " << avgProcessWaitingTime << "ns\n";
+  for (int i = 0; i < processVector.size(); i++) {
+    cout << "    Process " << i + 1 << " waiting time: " << processWaitingTimes[i] << "ns\n";
+  }
+
+  cout << "Average turnaround time: " << avgTurnaroundTime << "ns\n";
+  for (int i = 0; i < processVector.size(); i++) {
+    cout << "    Process " << i + 1 << " turnaround time: " << processTurnaroundTimes[i] << "ns\n";
+  }
+
+  cout << "Average response time: " << avgResponseTime << "ns\n";
+  for (int i = 0; i < processVector.size(); i++) {
+    cout << "    Process " << i + 1 << " response time: " << processResponseTimes[i] << "ns\n";
+  }
+
 }
