@@ -202,14 +202,102 @@ void SJF(vector<Process> &processes, int processCount) {
   }
 }
 
+// void SRTF(vector<Process> &processes, int processCount) {
+//   setBurstsLeft(processes);
+
+//   vector<Process> readyQueue;
+//   int currentTime = 0;
+//   int burstStartTime = 0;
+//   Process currentProcess;
+//   bool isRunning = false;
+//   vector<Process> completeProcesses;
+//   int cpuActiveTime = 0;
+
+//   for (auto &p: processes) {
+//     p.firstResponse == -1;
+//   }
+
+//   while (!readyQueue.empty() || !processes.empty() || isRunning) {
+//     // Add any arriving processes to the ready queue
+//     int i = 0;
+//     while (i < processes.size()) {
+//       if (processes[i].arrivalTime <= currentTime) {
+//         readyQueue.push_back(processes[i]);
+//         processes.erase(processes.begin() + i);
+//       } else {
+//         ++i;
+//       }
+//     }
+
+//     if (!readyQueue.empty()) {
+//       // Sort by shortest remaining time
+//       sort(readyQueue.begin(), readyQueue.end(), [](const Process &a, const Process &b) {
+//         if (a.burstsLeft == b.burstsLeft)
+//           return a.arrivalTime < b.arrivalTime;
+//         return a.burstsLeft < b.burstsLeft;
+//       });
+
+//       Process nextProcess = readyQueue.front();
+
+//       // Detect context switch (including first run)
+//       if (!isRunning || currentProcess.processIndex != nextProcess.processIndex) {
+//         if (isRunning) {
+//           int timeUsed = currentTime - burstStartTime;
+//           cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed;
+//           if (currentProcess.burstsLeft == 0)
+//             cout << "X";
+//           cout << "\n";
+//         }
+//         burstStartTime = currentTime;
+//         currentProcess = nextProcess;
+//         isRunning = true;
+//       }
+
+//       // Execute one unit of time
+//       currentProcess.burstsLeft--;
+//       currentTime++;
+
+//       // Sync with queue
+//       for (auto &p : readyQueue) {
+//         if (p.processIndex == currentProcess.processIndex) {
+//           p.burstsLeft = currentProcess.burstsLeft;
+//           break;
+//         }
+//       }
+
+//       // If process finished this time unit, print immediately and remove
+//       if (currentProcess.burstsLeft == 0) {
+//         int timeUsed = currentTime - burstStartTime;
+//         cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed << "X\n";
+//         readyQueue.erase(remove_if(readyQueue.begin(), readyQueue.end(),
+//                                    [&](const Process &p) {
+//                                      return p.processIndex == currentProcess.processIndex;
+//                                    }),
+//                          readyQueue.end());
+//         isRunning = false;
+//       }
+
+//     } else {
+//       // CPU is idle
+//       currentTime++;
+//     }
+//   }
+// }
+
 void SRTF(vector<Process> &processes, int processCount) {
-  setBurstsLeft(processes);  // Initialize burstsLeft
+  setBurstsLeft(processes);
 
   vector<Process> readyQueue;
   int currentTime = 0;
   int burstStartTime = 0;
   Process currentProcess;
   bool isRunning = false;
+  vector<Process> completeProcesses;
+  int cpuActiveTime = 0;
+
+  for (auto &p : processes) {
+    p.firstResponse == -1;
+  }
 
   while (!readyQueue.empty() || !processes.empty() || isRunning) {
     // Add any arriving processes to the ready queue
@@ -245,13 +333,21 @@ void SRTF(vector<Process> &processes, int processCount) {
         burstStartTime = currentTime;
         currentProcess = nextProcess;
         isRunning = true;
+
+        // Set response time if not yet set
+        for (auto &p : readyQueue) {
+          if (p.processIndex == currentProcess.processIndex && p.firstResponse == -1) {
+            p.firstResponse = currentTime - p.arrivalTime;
+            break;
+          }
+        }
       }
 
       // Execute one unit of time
       currentProcess.burstsLeft--;
       currentTime++;
 
-      // Sync with queue
+      // Sync currentProcess.burstsLeft to readyQueue
       for (auto &p : readyQueue) {
         if (p.processIndex == currentProcess.processIndex) {
           p.burstsLeft = currentProcess.burstsLeft;
@@ -259,15 +355,19 @@ void SRTF(vector<Process> &processes, int processCount) {
         }
       }
 
-      // If process finished this time unit, print immediately and remove
+      // If process finished this time unit, print and remove
       if (currentProcess.burstsLeft == 0) {
         int timeUsed = currentTime - burstStartTime;
         cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed << "X\n";
-        readyQueue.erase(remove_if(readyQueue.begin(), readyQueue.end(),
-                                   [&](const Process &p) {
-                                     return p.processIndex == currentProcess.processIndex;
-                                   }),
-                         readyQueue.end());
+
+        // Save completed process to completeProcesses
+        for (auto it = readyQueue.begin(); it != readyQueue.end(); ++it) {
+          if (it->processIndex == currentProcess.processIndex) {
+            completeProcesses.push_back(*it);
+            readyQueue.erase(it);
+            break;
+          }
+        }
         isRunning = false;
       }
 
@@ -276,16 +376,24 @@ void SRTF(vector<Process> &processes, int processCount) {
       currentTime++;
     }
   }
+  reportPerformance(completeProcesses, processCount, cpuActiveTime, currentTime);
 }
 
-void P(vector<Process> &processes, int processCount) {
-  setBurstsLeft(processes);  // initialize burstsLeft
 
+void P(vector<Process> &processes, int processCount) {
+  setBurstsLeft(processes);  // Initialize burstsLeft
   vector<Process> readyQueue;
   int currentTime = 0;
   Process currentProcess;
   bool isRunning = false;
   int burstStartTime = 0;
+  int cpuActiveTime = 0;  // Track total CPU active time
+  vector<Process> completeProcesses;
+
+  // Initialize firstResponse for all processes
+  for (auto &p : processes) {
+    p.firstResponse = -1;  // No response yet
+  }
 
   while (!readyQueue.empty() || !processes.empty() || isRunning) {
     // Add new arrivals to the ready queue
@@ -322,12 +430,19 @@ void P(vector<Process> &processes, int processCount) {
 
         burstStartTime = currentTime;
         currentProcess = nextProcess;
+
+        // Set first response time if not already set
+        if (currentProcess.firstResponse == -1) {
+          currentProcess.firstResponse = currentTime;
+        }
+
         isRunning = true;
       }
 
       // Run current process for 1 time unit
       currentProcess.burstsLeft--;
       currentTime++;
+      cpuActiveTime++;  // Increment the CPU active time
 
       // Update current process in ready queue
       for (auto &p : readyQueue) {
@@ -341,6 +456,12 @@ void P(vector<Process> &processes, int processCount) {
       if (currentProcess.burstsLeft == 0) {
         int timeUsed = currentTime - burstStartTime;
         cout << burstStartTime << " " << currentProcess.processIndex << " " << timeUsed << "X\n";
+
+        // Set termination time when the process finishes
+        currentProcess.terminationTime = currentTime;
+        completeProcesses.push_back(currentProcess);  // Store completed process
+
+        // Remove from readyQueue
         readyQueue.erase(remove_if(readyQueue.begin(), readyQueue.end(),
                                    [&](const Process &p) { return p.processIndex == currentProcess.processIndex; }),
                          readyQueue.end());
@@ -352,62 +473,16 @@ void P(vector<Process> &processes, int processCount) {
       currentTime++;
     }
   }
+
+  // Sort completed processes by process index
+  sort(completeProcesses.begin(), completeProcesses.end(),
+       [](const Process &a, const Process &b) {
+           return a.processIndex < b.processIndex;
+       });
+
+  // Pass the total CPU active time and current time (as total execution time) to reportPerformance
+  reportPerformance(completeProcesses, processCount, cpuActiveTime, currentTime);
 }
-
-// void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
-//   setBurstsLeft(processes);
-//   deque<Process> readyQueue;
-//   int currentTime = 0;
-//   int burstStartTime = 0;
-
-//   while (!readyQueue.empty() || !processes.empty()) {
-//     // add all newly arrived processes to the queue
-//     int i = 0;
-//     while (i < processes.size()) {
-//       if (processes[i].arrivalTime <= currentTime) {
-//         readyQueue.push_back(processes[i]);
-//         processes.erase(processes.begin() + i);
-//       } else {
-//         ++i;
-//       }
-//     }
-
-//     if (!readyQueue.empty()) {
-//       Process currentProcess = readyQueue.front();
-//       readyQueue.pop_front();
-
-//       burstStartTime = currentTime;
-
-//       int timeToRun = min(rrTimeSlice, currentProcess.burstsLeft);
-//       currentTime += timeToRun;
-//       currentProcess.burstsLeft -= timeToRun;
-
-//       cout << burstStartTime << " " << currentProcess.processIndex << " " << timeToRun;
-//       if (currentProcess.burstsLeft == 0)
-//         cout << "X";
-//       cout << "\n";
-
-//       // newly arrived processes that came in during this time slice
-//       i = 0;
-//       while (i < processes.size()) {
-//         if (processes[i].arrivalTime <= currentTime) {
-//           readyQueue.push_front(processes[i]);
-//           processes.erase(processes.begin() + i);
-//         } else {
-//           ++i;
-//         }
-//       }
-
-//       // process still has remaining time, requeue it
-//       if (currentProcess.burstsLeft > 0) {
-//         readyQueue.push_back(currentProcess);
-//       }
-
-//     } else {
-//       currentTime++; // nothing is in the queue but processes haven't arrived yet, advance time
-//     }
-//   }
-// }
 
 void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
   setBurstsLeft(processes);
