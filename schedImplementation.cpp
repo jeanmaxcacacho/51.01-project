@@ -158,13 +158,19 @@ void FCFS(vector<Process> &processes, int processCount) {
 
 void SJF(vector<Process> &processes, int processCount) {
   vector<Process> readyQueue;
+  vector<Process> completeProcesses;
   int currentTime = 0;
   bool cpuIdle = true;
   Process currentProcess;
   int burstsLeft = 0;
+  int cpuActiveTime = 0;
+
+  for (auto &p : processes) {
+    p.firstResponse = -1;
+  }
 
   while (!processes.empty() || !readyQueue.empty() || !cpuIdle) {
-    // Check for new arrivals
+    // check for new arrivals
     int i = 0;
     while (i < processes.size()) {
       if (processes[i].arrivalTime <= currentTime) {
@@ -175,9 +181,8 @@ void SJF(vector<Process> &processes, int processCount) {
       }
     }
 
-    // If CPU is idle and there are ready processes, schedule one
+    // cpu is idle and there are ready processes, schedule one
     if (cpuIdle && !readyQueue.empty()) {
-      // Sort by burst time (and then by arrival time as tie-breaker)
       sort(readyQueue.begin(), readyQueue.end(), [](const Process &a, const Process &b) {
         if (a.burstTime == b.burstTime)
           return a.arrivalTime < b.arrivalTime;
@@ -187,19 +192,27 @@ void SJF(vector<Process> &processes, int processCount) {
       currentProcess = readyQueue.front();
       readyQueue.erase(readyQueue.begin());
 
-      // Start executing
+      if (currentProcess.firstResponse == -1) {
+        currentProcess.firstResponse = currentTime;
+      }
+
       cpuIdle = false;
       burstsLeft = currentProcess.burstTime;
+
       cout << currentTime << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
 
-      currentTime += burstsLeft; // Fast forward time since non-preemptive
+      currentTime += burstsLeft;
+      cpuActiveTime += burstsLeft;
+
+      currentProcess.terminationTime = currentTime;
+      completeProcesses.push_back(currentProcess);
       burstsLeft = 0;
       cpuIdle = true;
     } else if (cpuIdle && readyQueue.empty() && !processes.empty()) {
-      // No one is ready, skip forward in time
       currentTime = processes.front().arrivalTime;
     }
   }
+  reportPerformance(completeProcesses, processCount, cpuActiveTime, currentTime);
 }
 
 void SRTF(vector<Process> &processes, int processCount) {
