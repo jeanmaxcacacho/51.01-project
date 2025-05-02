@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <queue>
 #include <unordered_map>
 
 using namespace std;
@@ -352,10 +353,70 @@ void P(vector<Process> &processes, int processCount) {
   }
 }
 
-
 void RR(vector<Process> &processes, int processCount, int rrTimeSlice) {
-  cout << "hi" << endl;
+  setBurstsLeft(processes);  // initialize burstsLeft
+
+  queue<Process> readyQueue;
+  int currentTime = 0;
+  int burstStartTime = 0;
+
+  // Sort by arrival time for initial loading
+  sort(processes.begin(), processes.end(), [](const Process &a, const Process &b) {
+    return a.arrivalTime < b.arrivalTime;
+  });
+
+  while (!readyQueue.empty() || !processes.empty()) {
+    // Add all newly arrived processes to the queue
+    int i = 0;
+    while (i < processes.size()) {
+      if (processes[i].arrivalTime <= currentTime) {
+        readyQueue.push(processes[i]);
+        processes.erase(processes.begin() + i);
+      } else {
+        ++i;
+      }
+    }
+
+    if (!readyQueue.empty()) {
+      Process currentProcess = readyQueue.front();
+      readyQueue.pop();
+
+      burstStartTime = currentTime;
+
+      int timeToRun = min(rrTimeSlice, currentProcess.burstsLeft);
+      currentTime += timeToRun;
+      currentProcess.burstsLeft -= timeToRun;
+
+      // Print output
+      cout << burstStartTime << " " << currentProcess.processIndex << " " << timeToRun;
+      if (currentProcess.burstsLeft == 0)
+        cout << "X";
+      cout << "\n";
+
+      // Add newly arrived processes that came in during this time slice
+      i = 0;
+      while (i < processes.size()) {
+        if (processes[i].arrivalTime <= currentTime) {
+          readyQueue.push(processes[i]);
+          processes.erase(processes.begin() + i);
+        } else {
+          ++i;
+        }
+      }
+
+      // If process still has remaining time, requeue it
+      if (currentProcess.burstsLeft > 0) {
+        currentProcess.arrivalTime = currentTime;  // update for fairness
+        readyQueue.push(currentProcess);
+      }
+
+    } else {
+      // If nothing is in the queue but processes haven't arrived yet, advance time
+      currentTime++;
+    }
+  }
 }
+
 
 // returns a sorted vector of the processes in block
 vector<Process> storeProcesses(int processCount, FILE* inputText) {
