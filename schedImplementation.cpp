@@ -9,36 +9,6 @@
 
 using namespace std;
 
-// notes from abdiel: think about it on a case-to-case basis, tie-breaker is arrival time
-// everytime there's a context-switch/swapping, print to the terminal
-// if the swapping occurs because a process has finished, append an X to the output
-
-/*
-  --INPUT--
-  2
-  4 SRTF
-  0 50 2
-  40 2 3
-  20 3 1
-  30 55 1
-  2 FCFS
-  100 10 1
-  10 70 1
-
-  --OUTPUT--
-  1
-  0 1 20
-  20 3 3X
-  23 1 17
-  40 2 2X
-  42 1 13X
-  55 4 55X
-  2
-  10 2 70x
-  100 1 10X
-*/
-
-// TODO: added struct member attribute for block report (e.g. first response, termination)
 struct Process {
   int arrivalTime;
   int burstTime;
@@ -122,39 +92,35 @@ int main(int argc, char *argv[]) {
 
 // these functions are passed in SORTED VECTORS of process structs
 // maybe we can do a rotating queue, process that finish are popped
-// our execution condition is while the queue still has shit inside
+// our execution condition is while the queue still has processes inside
 
-// sample for FCFS (without the case number)
-// INPUT
-// 2 FCFS
-// 100 10 1 (arrival time, burst, priority)
-// 10 70 1
-// OUTPUT
-// 10 2 70X (time elapsed so far, process index, CPU time used/burst time)
-// 100 1 10X
 void FCFS(vector<Process> &processes, int processCount) {
-  Process currentProcess = processes.front();
-  int burstsLeft = currentProcess.burstTime;
+  vector<Process> completeProcesses;
   int currentTime = 0;
+  int cpuActiveTime = 0;
 
-  while (!processes.empty()) {
-    // only write to terminal when there is a context switch
-    // in the case of FCFS context switches only happen when
-    // the current process finishes execution
+  for (int i = 0; i < processCount; ++i) {
+    Process currentProcess = processes[i];
+
     if (currentTime < currentProcess.arrivalTime) {
       currentTime = currentProcess.arrivalTime;
-      cout << currentProcess.arrivalTime;
     }
-    if (burstsLeft == 0) {
-      cout << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
-      processes.erase(processes.begin());
-      currentProcess = processes.front();
-      burstsLeft = currentProcess.burstTime;
-    }
-    currentTime++;
-    burstsLeft--;
+
+    currentProcess.firstResponse = currentTime;
+
+    cout << currentTime << " " << currentProcess.processIndex << " " << currentProcess.burstTime << "X\n";
+
+    currentTime += currentProcess.burstTime;
+    cpuActiveTime += currentProcess.burstTime;
+
+    currentProcess.terminationTime = currentTime;
+
+    completeProcesses.push_back(currentProcess);
   }
+
+  reportPerformance(completeProcesses, processCount, cpuActiveTime, currentTime);
 }
+
 
 void SJF(vector<Process> &processes, int processCount) {
   vector<Process> readyQueue;
